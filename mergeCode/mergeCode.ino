@@ -1,3 +1,22 @@
+/*
+PinMap
+A0 Ready lamp
+A1 Too Fast Lamp
+A2 Too Slow Lamp
+A3 Buzzer
+A4 I2C Bus SDA
+A5 I2C Bus SCL
+0  Serial RX
+1  Serial TX
+2  Encoder 1 Pharse A
+3  Encoder 2 Pharse A
+4  Encoder 1 Pharse B
+5  Encoder 2 Pharse B
+6  PWM To Moter Mosfet
+7  Reset Switch
+8  Increase Space Switch
+9  Decrease Space Switch
+*/
 #include <pt.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -21,7 +40,7 @@ struct pt pt_ResetButton;
 
 int stateLed = TOOSLOW;
 int stateResetButton = 0;
-LiquidCrystal_I2C lcd(0x20,16,2);
+LiquidCrystal_I2C lcd(0x27,16,2);
 
 #define encoder0_PinA  2
 #define encoder0_PinB  4
@@ -88,9 +107,9 @@ PT_THREAD(SpaceSelector(struct pt* pt))
  
   while (1)
   {
-    if(digitalRead(A4) == LOW) {
+   if(digitalRead(8) == LOW) {
       //increase space
-    } else if(digitalRead(A5) == LOW) {
+    } else if(digitalRead(9) == LOW) {
       //decrease space
     }
   }
@@ -147,29 +166,40 @@ void setLedNumber() {
 
 void setup()
 {
+  //pin mode
+  pinMode(encoder0_PinA, INPUT); 
+  pinMode(encoder0_PinB, INPUT);
   pinMode(A0, OUTPUT); //For LED Ready
   pinMode(A1, OUTPUT); //For LED Too Fast
   pinMode(A2, OUTPUT); //For LED Too Slow
-  pinMode(A4, INPUT_PULLUP); //For increase space
-  pinMode(A5, INPUT_PULLUP); //For decrease space
   pinMode(7, INPUT_PULLUP); //For Switch Reset
+  pinMode(8, INPUT_PULLUP); //For increase space
+  pinMode(9, INPUT_PULLUP); //For decrease space
+  
+  //interrupt setting
+  attachInterrupt(0, doEncoderA, CHANGE);  // encoder pin on interrupt 0 - pin 2
+  attachInterrupt(1, doEncoderB, CHANGE);  // encoder pin on interrupt 1 - pin 3
+  
+  //lcd setting
   lcd.begin();
   lcd.backlight();
   
+  //protothreads
   PT_INIT(&pt_ReadyState);
   PT_INIT(&pt_LCDDisplay);
   PT_INIT(&pt_SoundBuzzer);
   PT_INIT(&pt_SpaceSelector);
   PT_INIT(&pt_ResetButton);
-
-  pinMode(encoder0_PinA, INPUT); 
+  
+  //serial setting
+  Serial.begin (115200);
+  Serial.println("start");                // a personal quirk
+  
+  //etc setup
   digitalWrite(encoder0_PinA, HIGH);       // turn on pullup resistor
-  pinMode(encoder0_PinB, INPUT); 
   digitalWrite(encoder0_PinB, HIGH);       // turn on pullup resistor
   attachInterrupt(0, doEncoderA, CHANGE);  // encoder pin on interrupt 0 - pin 2
   attachInterrupt(1, doEncoderB, CHANGE);  // encoder pin on interrupt 1 - pin 3
-  Serial.begin (115200);
-  Serial.println("start");                // a personal quirk
   pinMode(13, OUTPUT);
 }
 
