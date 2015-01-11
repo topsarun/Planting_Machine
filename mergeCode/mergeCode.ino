@@ -198,8 +198,6 @@ void setup()
   //etc setup
   digitalWrite(encoder0_PinA, HIGH);       // turn on pullup resistor
   digitalWrite(encoder0_PinB, HIGH);       // turn on pullup resistor
-  attachInterrupt(0, doEncoderA, CHANGE);  // encoder pin on interrupt 0 - pin 2
-  attachInterrupt(1, doEncoderB, CHANGE);  // encoder pin on interrupt 1 - pin 3
   pinMode(13, OUTPUT);
 }
 
