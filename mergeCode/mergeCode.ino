@@ -79,6 +79,7 @@ PT_THREAD(ReadyState(struct pt* pt))
     PT_DELAY(pt, 500, ts);
     setLedNumber();
     PT_DELAY(pt, 500, ts);
+    PT_YIELD(pt);
   }
   PT_END(pt);
 }
@@ -95,6 +96,7 @@ PT_THREAD(SoundBuzzer(struct pt* pt))
     PT_DELAY(pt, 500 * stateLed, ts);
     noTone(A3);
     PT_DELAY(pt, 500 * stateLed, ts);
+    PT_YIELD(pt);
   }
   PT_END(pt);
 }
@@ -112,6 +114,7 @@ PT_THREAD(SpaceSelector(struct pt* pt))
     } else if(digitalRead(9) == LOW) {
       //decrease space
     }
+    PT_YIELD(pt);
   }
   PT_END(pt);
 }
@@ -132,6 +135,7 @@ PT_THREAD(LCDDisplay(struct pt* pt))
       lcd.print(/*space between rice*/"");
       lcd.setCursor(10,1);
       lcd.print(/*Area per Hour*/"");
+      PT_YIELD(pt);
   }
   PT_END(pt);
 }
@@ -145,7 +149,8 @@ PT_THREAD(ResetButton(struct pt* pt))
   while (1)
   {
     if(digitalRead(7) == HIGH) {
-     //Reset Area 
+     //Reset Area
+      PT_YIELD(pt);
     }
   }
   PT_END(pt);
@@ -217,4 +222,5 @@ void loop()
   Serial.print (" ");
   Serial.println (encoder1Pos, DEC);
 }
+
 
