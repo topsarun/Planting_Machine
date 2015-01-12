@@ -47,8 +47,9 @@ LiquidCrystal_I2C lcd(0x27,16,2);
 #define encoder1_PinA  3
 #define encoder1_PinB  5
 
-unsigned int encoder0Pos = 0;
-unsigned int encoder1Pos = 0;
+unsigned int encoder0Pos = 1;
+unsigned int encoder1Pos = 1;
+unsigned int r=0;
 
 void doEncoderA() {
   if (digitalRead(encoder0_PinA) == digitalRead(encoder0_PinB)) {
@@ -128,13 +129,13 @@ PT_THREAD(LCDDisplay(struct pt* pt))
   while (1)
   {
       lcd.setCursor(0,0);
-      lcd.print(/*Area*/"");
+      lcd.print(/*Area*/r);
       lcd.setCursor(10,0);
-      lcd.print(/*Max Area per Hour */"");
+      lcd.print(/*Max Area per Hour */"MAX");
       lcd.setCursor(0,1);
-      lcd.print(/*space between rice*/"");
+      lcd.print(/*space between rice*/"SPACE");
       lcd.setCursor(10,1);
-      lcd.print(/*Area per Hour*/"");
+      lcd.print(/*Area per Hour*/"A/H");
       PT_YIELD(pt);
   }
   PT_END(pt);
@@ -260,14 +261,20 @@ void loopLED() {
 }
 
 void loopSerial() {
-  Serial.print (encoder0Pos, DEC);
+  Serial.print (encoder0Pos/2, DEC);
   Serial.print (" ");
-  Serial.println (encoder1Pos, DEC);
+  Serial.println (r, DEC);
 }
 
 void loop()
 {
   loopPT_Thread();
-  loopLED();
+  //loopLED();
   loopSerial();
+  if(encoder0Pos>720)
+  {
+      encoder0Pos %= 720;
+      r ++;
+  }
+  delay(1000);
 }
