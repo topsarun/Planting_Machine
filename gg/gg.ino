@@ -46,16 +46,26 @@ LiquidCrystal_I2C lcd(0x27,16,2);
 #define encoder0_PinB  4
 #define encoder1_PinA  3
 #define encoder1_PinB  5
-
+#define TRUE 1
+#define FALSE 0
 unsigned int encoder0Pos = 1;
 unsigned int encoder1Pos = 1;
-unsigned int r=0;
+unsigned int roundEncoder0 = 0;
+
+int oldTime = 0;
+float newTime = 0;
+int oldPosition = 0;
+double velocity = 0;
+int isEncoder0Increase = TRUE;
+
 
 void doEncoderA() {
   if (digitalRead(encoder0_PinA) == digitalRead(encoder0_PinB)) {
     encoder0Pos++;
+    isEncoder0Increase = TRUE;
   } else {
     encoder0Pos--;
+    isEncoder0Increase = FALSE;
   }
 }
 
@@ -129,7 +139,7 @@ PT_THREAD(LCDDisplay(struct pt* pt))
   while (1)
   {
       lcd.setCursor(0,0);
-      lcd.print(/*Area*/r);
+      lcd.print(/*Area*/velocity);
       lcd.setCursor(10,0);
       lcd.print(/*Max Area per Hour */"MAX");
       lcd.setCursor(0,1);
@@ -224,7 +234,7 @@ void setupPT_Thread() {
 
 void setupSerial() {
   //serial setting
-  Serial.begin (115200);
+  Serial.begin (9600);
   Serial.println("start");                // a personal quirk
 }
 
@@ -235,8 +245,7 @@ void setupETC() {
   pinMode(13, OUTPUT);
 }
 
-void setup()
-{
+void setup() {
   setupPin();
   setupInterrupt();
   setupLCD();
@@ -260,21 +269,57 @@ void loopLED() {
   delay(1000);              // wait for a second
 }
 
-void loopSerial() {
-  Serial.print (encoder0Pos/2, DEC);
-  Serial.print (" ");
-  Serial.println (r, DEC);
+void printVelocity() {
+  
+  
+  
+	newTime = 0.001 * millis();
+	velocity = (encoder0Pos - oldPosition) / (float)(newTime - oldTime);
+
+        oldTime = newTime;
+	if(oldPosition != encoder0Pos) {
+            Serial.print("velocity : ");
+          Serial.println(velocity / 2);
+          Serial.print("oldPosition : ");
+          Serial.println(oldPosition / 2 );
+          Serial.print("encoder0Pos : ");
+          
+          Serial.println(encoder0Pos / 2);
+          
+          if(isEncoder0Increase) {
+            if (velocity < 0) {
+              velocity = (encoder0Pos - oldPosition) / (newTime - oldTime);
+            }
+          }
+          else {
+            if (velocity > 0) {
+              velocity = (encoder0Pos - oldPosition) / (newTime - oldTime);
+            }
+          }
+	  //Serial.print("encoder0Pos : ");
+	  //Serial.println(encoder0Pos / 2);
+	  oldPosition = encoder0Pos;
+
+        }    
 }
 
-void loop()
-{
+void loopSerial() {
+  //Serial.print (encoder0Pos / 2, DEC);
+  //Serial.print (" ");
+  //Serial.println (roundEncoder0, DEC);
+  printVelocity();
+}
+
+void loop() {
   loopPT_Thread();
   //loopLED();
-  loopSerial();
-  if(encoder0Pos>720)
+  //loopSerial();
+  if(encoder0Pos > 720)
   {
+      
       encoder0Pos %= 720;
-      r ++;
+      roundEncoder0++;
   }
+  loopSerial();
   delay(1000);
 }
