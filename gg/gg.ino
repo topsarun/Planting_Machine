@@ -17,6 +17,7 @@ A5 I2C Bus SCL
 8  Increase Space Switch
 9  Decrease Space Switch
 */
+
 #include <pt.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -46,18 +47,17 @@ LiquidCrystal_I2C lcd(0x27,16,2);
 #define encoder0_PinB  4
 #define encoder1_PinA  3
 #define encoder1_PinB  5
-#define TRUE 1
+#define TRUE  1
 #define FALSE 0
 unsigned int encoder0Pos = 1;
 unsigned int encoder1Pos = 1;
 unsigned int roundEncoder0 = 0;
 
 int oldTime = 0;
-float newTime = 0;
-int oldPosition = 0;
-double velocity = 0;
 int isEncoder0Increase = TRUE;
-
+int oldPosition = 0;
+float newTime = 0;
+double velocity = 0;
 
 void doEncoderA() {
   if (digitalRead(encoder0_PinA) == digitalRead(encoder0_PinB)) {
@@ -77,13 +77,10 @@ void doEncoderB() {
   }
 }
 
-
 PT_THREAD(ReadyState(struct pt* pt))
 {
   static uint32_t ts;
- 
   PT_BEGIN(pt);
- 
   while (1)
   {
     setLedStatus();
@@ -98,9 +95,7 @@ PT_THREAD(ReadyState(struct pt* pt))
 PT_THREAD(SoundBuzzer(struct pt* pt))
 {
   static uint32_t ts;
- 
   PT_BEGIN(pt);
- 
   while (1)
   {
     tone(A3, 400);
@@ -115,9 +110,7 @@ PT_THREAD(SoundBuzzer(struct pt* pt))
 PT_THREAD(SpaceSelector(struct pt* pt))
 {
   static uint32_t ts;
- 
   PT_BEGIN(pt);
- 
   while (1)
   {
    if(digitalRead(8) == LOW) {
@@ -133,9 +126,7 @@ PT_THREAD(SpaceSelector(struct pt* pt))
 PT_THREAD(LCDDisplay(struct pt* pt))
 {
   static uint32_t ts;
- 
   PT_BEGIN(pt);
- 
   while (1)
   {
       lcd.setCursor(0,0);
@@ -154,9 +145,7 @@ PT_THREAD(LCDDisplay(struct pt* pt))
 PT_THREAD(ResetButton(struct pt* pt))
 {
   static uint32_t ts;
- 
   PT_BEGIN(pt);
- 
   while (1)
   {
     if(digitalRead(7) == HIGH) {
@@ -188,7 +177,7 @@ void setLedStatus() {
 }
 
 void setupPinEncoder() {
-  pinMode(encoder0_PinA, INPUT); 
+  pinMode(encoder0_PinA, INPUT);
   pinMode(encoder0_PinB, INPUT);
 }
 
@@ -235,7 +224,7 @@ void setupPT_Thread() {
 void setupSerial() {
   //serial setting
   Serial.begin (9600);
-  Serial.println("start");                // a personal quirk
+  Serial.println("start");                 // serial start popup
 }
 
 void setupETC() {
@@ -270,22 +259,17 @@ void loopLED() {
 }
 
 void printVelocity() {
-  
-  
-  
 	newTime = 0.001 * millis();
 	velocity = (encoder0Pos - oldPosition) / (float)(newTime - oldTime);
 
         oldTime = newTime;
-	if(oldPosition != encoder0Pos) {
-            Serial.print("velocity : ");
+        if(oldPosition != encoder0Pos) {
+          Serial.print("velocity : ");
           Serial.println(velocity / 2);
           Serial.print("oldPosition : ");
           Serial.println(oldPosition / 2 );
           Serial.print("encoder0Pos : ");
-          
           Serial.println(encoder0Pos / 2);
-          
           if(isEncoder0Increase) {
             if (velocity < 0) {
               velocity = (encoder0Pos - oldPosition) / (newTime - oldTime);
@@ -299,11 +283,10 @@ void printVelocity() {
 	  //Serial.print("encoder0Pos : ");
 	  //Serial.println(encoder0Pos / 2);
 	  oldPosition = encoder0Pos;
-
-        }    
+        }
 }
 
-void loopSerial() {
+void loopSerial() { //Serial
   //Serial.print (encoder0Pos / 2, DEC);
   //Serial.print (" ");
   //Serial.println (roundEncoder0, DEC);
@@ -316,7 +299,6 @@ void loop() {
   //loopSerial();
   if(encoder0Pos > 720)
   {
-      
       encoder0Pos %= 720;
       roundEncoder0++;
   }
