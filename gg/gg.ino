@@ -17,7 +17,6 @@ A5 I2C Bus SCL
 8  Increase Space Switch
 9  Decrease Space Switch
 */
-
 #include <pt.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -42,31 +41,26 @@ struct pt pt_ResetButton;
 int stateLed = TOOSLOW;
 int stateResetButton = 0;
 LiquidCrystal_I2C lcd(0x27,16,2);
-
+#define M_PI 3.14159265358979323846
 #define encoder0_PinA  2
 #define encoder0_PinB  4
 #define encoder1_PinA  3
 #define encoder1_PinB  5
-#define TRUE  1
+#define TRUE 1
 #define FALSE 0
-#define M_PI 3.1415926538979323846
-
-// InputValueCar
-#define RadiusCar 2.58 // meters
-#define WidthCar 1.10 // meters
-#define AreaRAI 1600
-// InputValueCar
-
 unsigned int encoder0Pos = 1;
 unsigned int encoder1Pos = 1;
 unsigned int roundEncoder0 = 0;
+unsigned int Space = 20;
 
-float oldTime = 0;
-int isEncoder0Increase = TRUE;
-int oldPosition = 0;
+int oldTime = 0;
 float newTime = 0;
-double velocity = 0; // rai Per hr
-double omega;
+int oldPosition = 0;
+double velocity = 0;
+double angularVelocity = 0;
+double linearVelocity = 0;
+int isEncoder0Increase = TRUE;
+
 
 void doEncoderA() {
   if (digitalRead(encoder0_PinA) == digitalRead(encoder0_PinB)) {
@@ -86,10 +80,13 @@ void doEncoderB() {
   }
 }
 
+
 PT_THREAD(ReadyState(struct pt* pt))
 {
   static uint32_t ts;
+ 
   PT_BEGIN(pt);
+ 
   while (1)
   {
     setLedStatus();
@@ -104,7 +101,9 @@ PT_THREAD(ReadyState(struct pt* pt))
 PT_THREAD(SoundBuzzer(struct pt* pt))
 {
   static uint32_t ts;
+ 
   PT_BEGIN(pt);
+ 
   while (1)
   {
     tone(A3, 400);
@@ -119,13 +118,23 @@ PT_THREAD(SoundBuzzer(struct pt* pt))
 PT_THREAD(SpaceSelector(struct pt* pt))
 {
   static uint32_t ts;
+ 
   PT_BEGIN(pt);
+ 
   while (1)
   {
    if(digitalRead(8) == LOW) {
       //increase space
+      Serial.print(digitalRead(8));
+      if(Space<25) {
+         Space++; 
+      }
     } else if(digitalRead(9) == LOW) {
       //decrease space
+      Serial.print(digitalRead(9));
+      if(Space>15) {
+         Space--; 
+      }
     }
     PT_YIELD(pt);
   }
@@ -135,15 +144,17 @@ PT_THREAD(SpaceSelector(struct pt* pt))
 PT_THREAD(LCDDisplay(struct pt* pt))
 {
   static uint32_t ts;
+ 
   PT_BEGIN(pt);
+ 
   while (1)
   {
       lcd.setCursor(0,0);
-      lcd.print(/*Area*/velocity);
+      lcd.print(/*Area*/linearVelocity);
       lcd.setCursor(10,0);
       lcd.print(/*Max Area per Hour */"MAX");
       lcd.setCursor(0,1);
-      lcd.print(/*space between rice*/"SPACE");
+      lcd.print(Space);
       lcd.setCursor(10,1);
       lcd.print(/*Area per Hour*/"A/H");
       PT_YIELD(pt);
@@ -154,7 +165,9 @@ PT_THREAD(LCDDisplay(struct pt* pt))
 PT_THREAD(ResetButton(struct pt* pt))
 {
   static uint32_t ts;
+ 
   PT_BEGIN(pt);
+ 
   while (1)
   {
     if(digitalRead(7) == HIGH) {
@@ -186,7 +199,7 @@ void setLedStatus() {
 }
 
 void setupPinEncoder() {
-  pinMode(encoder0_PinA, INPUT);
+  pinMode(encoder0_PinA, INPUT); 
   pinMode(encoder0_PinB, INPUT);
 }
 
@@ -233,7 +246,7 @@ void setupPT_Thread() {
 void setupSerial() {
   //serial setting
   Serial.begin (9600);
-  Serial.println("start");                 // serial start popup
+  Serial.println("start");                // a personal quirk
 }
 
 void setupETC() {
@@ -248,6 +261,7 @@ void setup() {
   setupInterrupt();
   setupLCD();
   setupPT_Thread();
+  setupPinSwitch();
   setupSerial();
   setupETC();
 }
@@ -267,72 +281,51 @@ void loopLED() {
   delay(1000);              // wait for a second
 }
 
-void findOmegaDegree() {
+void printVelocity() {
+  
+  
+  
 	newTime = 0.001 * millis();
-	omega = (encoder0Pos - oldPosition) / 2 / (float)(newTime - oldTime);
-}
-
-void fixedOverflow() {
-	if(isEncoder0Increase) 
-		if (omega < 0) 
-			omega = (720 + encoder0Pos - oldPosition) / 2 / (float)(newTime - oldTime);
-	else 
-		if (omega > 0) 
-			omega = (-720 + encoder0Pos - oldPosition) / 2 / (float)(newTime - oldTime);
-}
-
-void printValueEncoder() {
-	Serial.print("Omega : ");
-	Serial.print(omega * M_PI / 180.0);
-	Serial.println(" rad/s");
-	Serial.print("OldPosition : ");
-	Serial.println(oldPosition / 2);
-	Serial.print("Encoder0Pos : ");
-	Serial.println(encoder0Pos / 2);
-}
-
-void changePosition() {
+        if((encoder0Pos - oldPosition) / (float)(newTime - oldTime) <= 10000) {
+      	  velocity = (encoder0Pos - oldPosition) / (float)(newTime - oldTime);
+          velocity = velocity/2;
+          angularVelocity = (velocity * M_PI)/180;
+          linearVelocity = angularVelocity*0.43*6; //43 cm = R of Car's wheel
+          //linearVelocity = (linearVelocity/1600)*3600;
+        }
+        
+        oldTime = newTime;
 	if(oldPosition != encoder0Pos) {
-		printValueEncoder();
-		fixedOverflow();
-	}
-	oldPosition = encoder0Pos;
-	oldTime = newTime;
+            Serial.print("velocity : ");
+          Serial.println(linearVelocity);
+          Serial.print("oldPosition : ");
+          Serial.println(oldPosition / 2 );
+          Serial.print("encoder0Pos : ");
+          
+          Serial.println(encoder0Pos / 2);
+          
+          if(isEncoder0Increase) {
+            if (velocity < 0) {
+              velocity = (encoder0Pos - oldPosition) / (newTime - oldTime);
+            }
+          }
+          else {
+            if (velocity > 0) {
+              velocity = (encoder0Pos - oldPosition) / (newTime - oldTime);
+            }
+          }
+	  //Serial.print("encoder0Pos : ");
+	  //Serial.println(encoder0Pos / 2);
+	  oldPosition = encoder0Pos;
+
+        }    
 }
 
-void convertRadian() {
-	omega = omega * M_PI / 180;
-}
-
-void setVelocity() {
-	double v = omega * RadiusCar;
-	velocity = v * WidthCar / AreaRAI;
-	velocity = velocity * 3600;
-}
-
-void debugCheck() {
-	Serial.print("Velocity : ");
-	Serial.print(velocity);
-	Serial.println(" RAI/hr");
-
-	Serial.print("Omaga : ");
-	Serial.print(omaga);
-	Serial.println(" rad/sec");
-}
-
-void findVelocity() {
-	findOmegaDegree();
-	changePosition();
-	convertRadian();
-	setVelocity();
-	debugCheck();
-}
-
-void loopSerial() { //Serial
+void loopSerial() {
   //Serial.print (encoder0Pos / 2, DEC);
   //Serial.print (" ");
   //Serial.println (roundEncoder0, DEC);
-  findVelocity();
+  printVelocity();
 }
 
 void loop() {
@@ -341,9 +334,10 @@ void loop() {
   //loopSerial();
   if(encoder0Pos > 720)
   {
+      
       encoder0Pos %= 720;
       roundEncoder0++;
   }
   loopSerial();
-  delay(1000);
+  delay(200);
 }
