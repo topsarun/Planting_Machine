@@ -61,8 +61,8 @@ double angularVelocity = 0;
 double linearVelocity = 0;
 int isEncoder0Increase = TRUE;
 
-unsigned int countRai = 0;
-unsigned double maxVelocity = 0;
+double countRai = 0;
+double maxVelocity = 0;
 
 
 void doEncoderA() {
@@ -154,11 +154,13 @@ PT_THREAD(LCDDisplay(struct pt* pt))
   {
       lcd.setCursor(0,0);
 	  lcd.print("                ");
+    lcd.setCursor(0,0);
       lcd.print(/*Area per Hour*/countRai);
       lcd.setCursor(10,0);
       lcd.print(/*Max Area per Hour */maxVelocity);
       lcd.setCursor(0,1);
 	  lcd.print("                ");
+    lcd.setCursor(0,1);
       lcd.print(Space);
       lcd.setCursor(10,1);
       lcd.print(/*Area*/linearVelocity);
@@ -291,15 +293,16 @@ void printVelocity() {
   
   
   newTime = 0.001 * millis();
-  unsigned int deltaPos = encoder1Pos - oldPosition;
+  unsigned int deltaPos = encoder0Pos - oldPosition;
         if((deltaPos) / (float)(newTime - oldTime) <= 10000) {
           velocity = (deltaPos) / (float)(newTime - oldTime);
           velocity = velocity/2;
           angularVelocity = (velocity * M_PI)/180;
           linearVelocity = angularVelocity * 0.43 * 6 * 3600 / 1600 * 1.10; //43 cm = R of Car's wheel
+
 		  if (linearVelocity > maxVelocity)
 			  maxVelocity = linearVelocity;
-		  countRai += deltaPos * M_PI / 180 * 0.43 * 1.10 / 1600;
+		  countRai += deltaPos * M_PI / 180.0 * 0.43 * 1.10 / 1600;
           //linearVelocity = (linearVelocity/1600)*3600;
         }
         
