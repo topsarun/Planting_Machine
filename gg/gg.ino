@@ -270,7 +270,6 @@ void loopLED() {
 void findOmegaDegree() {
 	newTime = 0.001 * millis();
 	omega = (encoder0Pos - oldPosition) / 2 / (float)(newTime - oldTime);
-	omega = omega * M_PI / 180.0;
 }
 
 void fixedOverflow() {
@@ -315,6 +314,10 @@ void debugCheck() {
 	Serial.print("Velocity : ");
 	Serial.print(velocity);
 	Serial.println(" RAI/hr");
+
+	Serial.print("Omaga : ");
+	Serial.print(omaga);
+	Serial.println(" rad/sec");
 }
 
 void findVelocity() {
