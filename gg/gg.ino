@@ -49,15 +49,24 @@ LiquidCrystal_I2C lcd(0x27,16,2);
 #define encoder1_PinB  5
 #define TRUE  1
 #define FALSE 0
+#define M_PI 3.1415926538979323846
+
+// InputValueCar
+#define RadiusCar 2.58 // meters
+#define WidthCar 1.10 // meters
+#define AreaRAI 1600
+// InputValueCar
+
 unsigned int encoder0Pos = 1;
 unsigned int encoder1Pos = 1;
 unsigned int roundEncoder0 = 0;
 
-int oldTime = 0;
+float oldTime = 0;
 int isEncoder0Increase = TRUE;
 int oldPosition = 0;
 float newTime = 0;
-double velocity = 0;
+double velocity = 0; // rai Per hr
+double omega;
 
 void doEncoderA() {
   if (digitalRead(encoder0_PinA) == digitalRead(encoder0_PinB)) {
@@ -258,39 +267,69 @@ void loopLED() {
   delay(1000);              // wait for a second
 }
 
-void printVelocity() {
+void findOmegaDegree() {
 	newTime = 0.001 * millis();
-	velocity = (encoder0Pos - oldPosition) / (float)(newTime - oldTime);
+	omega = (encoder0Pos - oldPosition) / 2 / (float)(newTime - oldTime);
+	omega = omega * M_PI / 180.0;
+}
 
-        oldTime = newTime;
-        if(oldPosition != encoder0Pos) {
-          Serial.print("velocity : ");
-          Serial.println(velocity / 2);
-          Serial.print("oldPosition : ");
-          Serial.println(oldPosition / 2 );
-          Serial.print("encoder0Pos : ");
-          Serial.println(encoder0Pos / 2);
-          if(isEncoder0Increase) {
-            if (velocity < 0) {
-              velocity = (encoder0Pos - oldPosition) / (newTime - oldTime);
-            }
-          }
-          else {
-            if (velocity > 0) {
-              velocity = (encoder0Pos - oldPosition) / (newTime - oldTime);
-            }
-          }
-	  //Serial.print("encoder0Pos : ");
-	  //Serial.println(encoder0Pos / 2);
-	  oldPosition = encoder0Pos;
-        }
+void fixedOverflow() {
+	if(isEncoder0Increase) 
+		if (omega < 0) 
+			omega = (720 + encoder0Pos - oldPosition) / 2 / (float)(newTime - oldTime);
+	else 
+		if (omega > 0) 
+			omega = (-720 + encoder0Pos - oldPosition) / 2 / (float)(newTime - oldTime);
+}
+
+void printValueEncoder() {
+	Serial.print("Omega : ");
+	Serial.print(omega * M_PI / 180.0);
+	Serial.println(" rad/s");
+	Serial.print("OldPosition : ");
+	Serial.println(oldPosition / 2);
+	Serial.print("Encoder0Pos : ");
+	Serial.println(encoder0Pos / 2);
+}
+
+void changePosition() {
+	if(oldPosition != encoder0Pos) {
+		printValueEncoder();
+		fixedOverflow();
+	}
+	oldPosition = encoder0Pos;
+	oldTime = newTime;
+}
+
+void convertRadian() {
+	omega = omega * M_PI / 180;
+}
+
+void setVelocity() {
+	double v = omega * RadiusCar;
+	velocity = v * WidthCar / AreaRAI;
+	velocity = velocity * 3600;
+}
+
+void debugCheck() {
+	Serial.print("Velocity : ");
+	Serial.print(velocity);
+	Serial.println(" RAI/hr");
+}
+
+void findVelocity() {
+	findOmegaDegree();
+	changePosition();
+	convertRadian();
+	findLinearVelocity();
+	debugCheck();
 }
 
 void loopSerial() { //Serial
   //Serial.print (encoder0Pos / 2, DEC);
   //Serial.print (" ");
   //Serial.println (roundEncoder0, DEC);
-  printVelocity();
+  findVelocity();
 }
 
 void loop() {
