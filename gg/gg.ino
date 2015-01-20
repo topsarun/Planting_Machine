@@ -65,10 +65,8 @@ int isEncoder0Increase = TRUE;
 void doEncoderA() {
   if (digitalRead(encoder0_PinA) == digitalRead(encoder0_PinB)) {
     encoder0Pos++;
-    isEncoder0Increase = TRUE;
   } else {
     encoder0Pos--;
-    isEncoder0Increase = FALSE;
   }
 }
 
@@ -281,51 +279,32 @@ void loopLED() {
   delay(1000);              // wait for a second
 }
 
-void printVelocity() {
-  
-  
-  
+void findVelocity() {
 	newTime = 0.001 * millis();
-        if((encoder0Pos - oldPosition) / (float)(newTime - oldTime) <= 10000) {
-      	  velocity = (encoder0Pos - oldPosition) / (float)(newTime - oldTime);
-          velocity = velocity/2;
-          angularVelocity = (velocity * M_PI)/180;
-          linearVelocity = angularVelocity*0.43*6; //43 cm = R of Car's wheel
-          //linearVelocity = (linearVelocity/1600)*3600;
-        }
-        
-        oldTime = newTime;
+	if((encoder0Pos - oldPosition) / (float)(newTime - oldTime) <= 10000) {
+		velocity = (encoder0Pos - oldPosition) / (float)(newTime - oldTime);
+		velocity = velocity / 2;
+		angularVelocity = (velocity * M_PI)/ 180;
+		//43 cm = R of Car's wheel
+		linearVelocity = angularVelocity * 0.43 * 6; 
+	}
+	oldTime = newTime;
 	if(oldPosition != encoder0Pos) {
-            Serial.print("velocity : ");
-          Serial.println(linearVelocity);
-          Serial.print("oldPosition : ");
-          Serial.println(oldPosition / 2 );
-          Serial.print("encoder0Pos : ");
-          
-          Serial.println(encoder0Pos / 2);
-          
-          if(isEncoder0Increase) {
-            if (velocity < 0) {
-              velocity = (encoder0Pos - oldPosition) / (newTime - oldTime);
-            }
-          }
-          else {
-            if (velocity > 0) {
-              velocity = (encoder0Pos - oldPosition) / (newTime - oldTime);
-            }
-          }
-	  //Serial.print("encoder0Pos : ");
-	  //Serial.println(encoder0Pos / 2);
-	  oldPosition = encoder0Pos;
-
-        }    
+		Serial.print("velocity : ");
+		Serial.println(linearVelocity);
+		Serial.print("oldPosition : ");
+		Serial.println(oldPosition / 2 );
+		Serial.print("encoder0Pos : ");
+		Serial.println(encoder0Pos / 2);
+		oldPosition = encoder0Pos;
+	}    
 }
 
 void loopSerial() {
   //Serial.print (encoder0Pos / 2, DEC);
   //Serial.print (" ");
   //Serial.println (roundEncoder0, DEC);
-  printVelocity();
+  findVelocity();
 }
 
 void loop() {
