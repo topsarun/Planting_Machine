@@ -177,7 +177,7 @@ PT_THREAD(ResetButton(struct pt* pt))
  
   while (1)
   {
-    if(digitalRead(7) == LOW) {
+    if(digitalRead(7) == HIGH) {
       countRai = 0;
       Serial.print("SuperReset : ");
       Serial.print(digitalRead(7));
@@ -221,7 +221,7 @@ void setupPinLED() {
 }
 
 void setupPinSwitch() {
-  pinMode(7, INPUT); //For Switch Reset
+  pinMode(7, INPUT_PULLUP); //For Switch Reset
   pinMode(8, INPUT_PULLUP); //For increase space
   pinMode(9, INPUT_PULLUP); //For decrease space
 }
