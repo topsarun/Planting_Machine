@@ -321,7 +321,7 @@ void findVelocity() {
 	findOmegaDegree();
 	changePosition();
 	convertRadian();
-	findLinearVelocity();
+	setVelocity();
 	debugCheck();
 }
 
