@@ -48,8 +48,8 @@ LiquidCrystal_I2C lcd(0x27,16,2);
 #define encoder1_PinB  5
 #define TRUE 1
 #define FALSE 0
-unsigned int encoder0Pos = 1;
-unsigned int encoder1Pos = 1;
+volatile unsigned int encoder0Pos = 1;
+volatile unsigned int encoder1Pos = 1;
 unsigned int roundEncoder0 = 0;
 unsigned int Space = 20;
 
@@ -153,13 +153,13 @@ PT_THREAD(LCDDisplay(struct pt* pt))
   while (1)
   {
       lcd.setCursor(0,0);
-	  lcd.print("                ");
+    lcd.print("                ");
     lcd.setCursor(0,0);
       lcd.print(/*Area per Hour*/countRai);
       lcd.setCursor(10,0);
       lcd.print(/*Max Area per Hour */maxVelocity);
       lcd.setCursor(0,1);
-	  lcd.print("                ");
+    lcd.print("                ");
     lcd.setCursor(0,1);
       lcd.print(Space);
       lcd.setCursor(10,1);
@@ -177,10 +177,14 @@ PT_THREAD(ResetButton(struct pt* pt))
  
   while (1)
   {
-    if(digitalRead(7) == HIGH) {
-     //Reset Area
-      PT_YIELD(pt);
+    if(digitalRead(7) == LOW) {
+      countRai = 0;
+      Serial.print("SuperReset : ");
+      Serial.print(digitalRead(7));
+      Serial.print("| CountRai : ");
+      Serial.println(countRai);
     }
+    PT_YIELD(pt);
   }
   PT_END(pt);
 }
@@ -217,7 +221,7 @@ void setupPinLED() {
 }
 
 void setupPinSwitch() {
-  pinMode(7, INPUT_PULLUP); //For Switch Reset
+  pinMode(7, INPUT); //For Switch Reset
   pinMode(8, INPUT_PULLUP); //For increase space
   pinMode(9, INPUT_PULLUP); //For decrease space
 }
@@ -300,9 +304,9 @@ void printVelocity() {
           angularVelocity = (velocity * M_PI)/180;
           linearVelocity = angularVelocity * 0.43 * 6 * 3600 / 1600 * 1.10; //43 cm = R of Car's wheel
 
-		  if (linearVelocity > maxVelocity)
-			  maxVelocity = linearVelocity;
-		  countRai += deltaPos * M_PI / 180.0 * 0.43 * 1.10 / 1600;
+      if (linearVelocity > maxVelocity)
+        maxVelocity = linearVelocity;
+      countRai += deltaPos * M_PI / 180.0 * 0.43 * 1.10 / 1600;
           //linearVelocity = (linearVelocity/1600)*3600;
         }
         
@@ -353,4 +357,5 @@ void loop() {
   loopSerial();
   delay(600);
 }
+
 
