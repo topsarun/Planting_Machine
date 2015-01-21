@@ -357,5 +357,3 @@ void loop() {
   loopSerial();
   delay(600);
 }
-
-
