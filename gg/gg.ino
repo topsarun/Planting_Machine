@@ -48,6 +48,10 @@ LiquidCrystal_I2C lcd(0x27,16,2);
 #define encoder1_PinB  5
 #define TRUE 1
 #define FALSE 0
+
+#define velocity_ref xxxx
+#define Space_ref 15.0
+
 volatile unsigned int encoder0Pos = 1;
 volatile unsigned int encoder1Pos = 1;
 unsigned int roundEncoder0 = 0;
@@ -57,8 +61,10 @@ int oldTime = 0;
 float newTime = 0;
 int oldPosition = 0;
 double velocity = 0;
+double velocity_meter_per_second = 0;
 double angularVelocity = 0;
 double linearVelocity = 0;
+double distanceMeter = 0;
 int isEncoder0Increase = TRUE;
 
 double countRai = 0;
@@ -226,11 +232,16 @@ void setupPinSwitch() {
   pinMode(9, INPUT_PULLUP); //For decrease space
 }
 
+void setupPin_Motfed() {
+  pinMode(6, OUTPUT);
+}
+
 void  setupPin() {
   //pin mode
   setupPinEncoder();
   setupPinLED();
   setupPinSwitch();
+  setupPin_Motfed();
 }
 
 void setupInterrupt() {
@@ -303,10 +314,12 @@ void printVelocity() {
           velocity = velocity/2;
           angularVelocity = (velocity * M_PI)/180;
           linearVelocity = angularVelocity * 0.43 * 6 * 3600 / 1600 * 1.10; //43 cm = R of Car's wheel
+          velocity_meter_per_second = angularVelocity * 0.43;
 
       if (linearVelocity > maxVelocity)
         maxVelocity = linearVelocity;
-      countRai += deltaPos * M_PI / 180.0 * 0.43 * 1.10 / 1600;
+        countRai += deltaPos/2.0 * M_PI / 180.0 * 0.43 * 1.10 / 1600.0;
+        distanceMeter += deltaPos/2.0 * 0.43;  
           //linearVelocity = (linearVelocity/1600)*3600;
         }
         
@@ -317,9 +330,7 @@ void printVelocity() {
           Serial.print("oldPosition : ");
           Serial.println(oldPosition / 2 );
           Serial.print("encoder0Pos : ");
-          
           Serial.println(encoder0Pos / 2);
-          
           // if(isEncoder0Increase) {
           //   if (velocity < 0) {
           //     velocity = (encoder0Pos - oldPosition) / (newTime - oldTime);
@@ -344,6 +355,18 @@ void loopSerial() {
   printVelocity();
 }
 
+void controlPWM() {
+  //velo ref = velo max
+  //space ref = space max
+  double ratio = (velocity_meter_per_second / velocity_ref) * (Space_ref / Space);
+  if (ratio > 1)
+  {
+    ratio = 1;
+  }
+  analogWrite(6, ratio * 255);
+
+}
+
 void loop() {
   loopPT_Thread();
   //loopLED();
@@ -355,5 +378,6 @@ void loop() {
       roundEncoder0++;
   }
   loopSerial();
+  controlPWM();
   delay(600);
 }
