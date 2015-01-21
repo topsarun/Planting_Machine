@@ -357,7 +357,7 @@ void loopSerial() {
 
 void controlPWM() {
   //velo ref = velo max
-  //space ref = space max
+  //space ref = space min
   double ratio = (velocity_meter_per_second / velocity_ref) * (Space_ref / Space);
   if (ratio > 1)
   {
